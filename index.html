@@ -1,0 +1,2021 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PCD - Filtering Lab (Single File)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-2: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.68);
+      --muted-2: rgba(255, 255, 255, 0.52);
+      --accent: #7c5cff;
+      --accent-2: #2ee59d;
+      --danger: #ff4d6d;
+      --warning: #ffcc66;
+      --shadow: 0 18px 70px rgba(0,0,0,0.45);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 20% 10%, rgba(124, 92, 255, 0.20), transparent 55%),
+        radial-gradient(900px 600px at 80% 20%, rgba(46, 229, 157, 0.16), transparent 60%),
+        radial-gradient(900px 600px at 60% 90%, rgba(255, 77, 109, 0.10), transparent 55%),
+        linear-gradient(180deg, #070a14 0%, #0b1020 55%, #070a14 100%);
+      min-height: 100svh;
+    }
+
+    header {
+      padding: 28px 16px 18px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .title {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      max-width: 75ch;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(124, 92, 255, 0.16);
+      border: 1px solid rgba(124, 92, 255, 0.32);
+      border-radius: 999px;
+      color: rgba(255, 255, 255, 0.90);
+      font-size: 12px;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    main {
+      padding: 0 16px 36px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    /* Pastikan panel kontrol selalu bisa diklik (tidak ketutup elemen preview) */
+    section[aria-label="Panel Kontrol"] { z-index: 5; }
+    section[aria-label="Area Canvas"] { z-index: 1; }
+
+    .card-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.88);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .card-body { padding: 14px 16px 16px; }
+
+    .stack { display: grid; gap: 12px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      border: 1px dashed rgba(255, 255, 255, 0.22);
+      background: rgba(0, 0, 0, 0.15);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.18);
+      color: rgba(255, 255, 255, 0.88);
+      outline: none;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .filter-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 420px) {
+      .filter-btns { grid-template-columns: 1fr; }
+    }
+
+    button {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.88);
+      padding: 11px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: transform 0.06s ease, background 0.2s ease, border-color 0.2s ease;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.2px;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    button:active { transform: translateY(1px); }
+
+    button.primary {
+      background: linear-gradient(135deg, rgba(124, 92, 255, 0.85), rgba(124, 92, 255, 0.55));
+      border-color: rgba(124, 92, 255, 0.65);
+    }
+
+    button.primary:hover {
+      background: linear-gradient(135deg, rgba(124, 92, 255, 0.95), rgba(124, 92, 255, 0.62));
+      border-color: rgba(124, 92, 255, 0.85);
+    }
+
+    button.ghost {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    button.danger {
+      background: rgba(255, 77, 109, 0.12);
+      border-color: rgba(255, 77, 109, 0.35);
+      color: rgba(255, 255, 255, 0.90);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .note {
+      font-size: 12px;
+      color: var(--muted-2);
+      line-height: 1.45;
+    }
+
+    .note strong { color: rgba(255, 255, 255, 0.86); }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tab-btn {
+      padding: 10px 10px;
+      border-radius: 14px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .tab-btn.active {
+      background: rgba(124, 92, 255, 0.20);
+      border-color: rgba(124, 92, 255, 0.55);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    .muted-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .kernel {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.82);
+      overflow: auto;
+      white-space: pre;
+      line-height: 1.5;
+    }
+
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      padding: 14px 16px 16px;
+      align-items: start;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      .preview-grid { grid-template-columns: 1fr; }
+    }
+
+    .canvas-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .canvas-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .canvas-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .canvas-meta {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      white-space: nowrap;
+    }
+
+    .canvas-wrap {
+      padding: 12px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, rgba(255,255,255,0.06) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.06) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.06) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.06) 75%);
+      background-size: 22px 22px;
+      background-position: 0 0, 0 11px, 11px -11px, -11px 0px;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.18);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .compare {
+      width: 100%;
+      max-width: 100%;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      background: rgba(0,0,0,0.18);
+    }
+
+    .compare canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 0;
+      box-shadow: none;
+      max-width: none;
+    }
+
+    .compare .layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .compare .layer.filtered {
+      overflow: hidden;
+      width: var(--compare, 50%);
+      border-right: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 6px 0 18px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+
+    .compare .label {
+      position: absolute;
+      top: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-size: 12px;
+      font-family: var(--mono);
+      color: rgba(255, 255, 255, 0.86);
+      user-select: none;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+
+    .compare .label.before { left: 10px; }
+    .compare .label.after { right: 10px; }
+
+    .kgrid {
+      display: grid;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .kgrid-inner {
+      display: grid;
+      gap: 8px;
+    }
+
+    .kgrid-inner.size-3 { grid-template-columns: repeat(3, 1fr); }
+    .kgrid-inner.size-5 { grid-template-columns: repeat(5, 1fr); }
+
+    .kcell {
+      width: 100%;
+      padding: 10px 8px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.18);
+      color: rgba(255, 255, 255, 0.90);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 420px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px 26px;
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    a { color: rgba(124, 92, 255, 0.95); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <div>
+        <h1>Pengolahan Citra Digital — Filtering Lab (Mask Processing)</h1>
+        <div class="subtitle">
+          Aplikasi single-file untuk menerapkan berbagai filter (smoothing, sharpening, edge detection, artistic) berbasis kernel
+          secara manual pixel-by-pixel menggunakan <code>HTML5 Canvas</code> dan <code>JavaScript</code> (tanpa library eksternal).
+        </div>
+      </div>
+      <div class="badge" title="Siap untuk GitHub Pages">Single <code>index.html</code> • Canvas • Manual Convolution</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section class="card" aria-label="Panel Kontrol">
+        <div class="card-header">
+          <h2 class="card-title">Dashboard</h2>
+          <span class="note" id="statusText">Belum ada gambar.</span>
+        </div>
+        <div class="card-body">
+          <div class="stack">
+            <div class="row">
+              <div>
+                <label for="fileInput">Upload gambar</label>
+                <input id="fileInput" type="file" accept="image/*" />
+                <div class="note" style="margin-top: 8px;">
+                  Semua proses dihitung manual pixel-by-pixel. Untuk demo yang cepat, gunakan gambar ukuran sedang.
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Mode</label>
+                <div class="two-col">
+                  <button class="ghost" id="btnModeCompare" disabled>Compare Slider</button>
+                  <button class="ghost" id="btnModeSide" disabled>Side-by-side</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Tabs</label>
+                <div class="tabs" role="tablist">
+                  <button class="tab-btn active" id="tabPresetBtn" type="button">Preset Filters</button>
+                  <button class="tab-btn" id="tabCustomBtn" type="button">Custom Kernel</button>
+                  <button class="tab-btn" id="tabAboutBtn" type="button">About Algorithm</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel active" id="tabPreset">
+              <div class="stack">
+                <div>
+                  <label for="filterSelect">Pilih filter (preset)</label>
+                  <select id="filterSelect" disabled>
+                    <option value="">-- Upload gambar dulu --</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="intensityRange">Intensity (blend original → hasil)</label>
+                  <input id="intensityRange" type="range" min="0" max="100" value="100" disabled />
+                  <div class="muted-line">
+                    <span class="pill"><span>Intensity</span> <span id="intensityValue">100%</span></span>
+                    <span class="note">0% = original, 100% = full filter</span>
+                  </div>
+                </div>
+
+                <div id="highBoostBlock" style="display:none;">
+                  <label for="highBoostRange">High-Boost Amplification (A)</label>
+                  <input id="highBoostRange" type="range" min="1" max="6" step="0.1" value="1.5" />
+                  <div class="muted-line">
+                    <span class="pill"><span>A</span> <span id="highBoostValue">1.5</span></span>
+                    <span class="note">A &gt; 1 memperkuat detail (high-frequency)</span>
+                  </div>
+                </div>
+
+                <div class="filter-btns">
+                  <button class="primary" id="btnApply" disabled>Apply Filter</button>
+                  <button class="ghost" id="btnUndo" disabled>Undo → Original</button>
+                </div>
+
+                <div class="filter-btns">
+                  <button class="ghost" id="btnDownload" disabled>Download Hasil</button>
+                  <button class="danger" id="btnReset" disabled>Reset</button>
+                </div>
+
+                <div>
+                  <label>Recommended Filters</label>
+                  <div class="note" id="recommendationText">Upload gambar untuk melihat rekomendasi.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="tabCustom">
+              <div class="stack">
+                <div>
+                  <label for="kernelSizeSelect">Kernel size</label>
+                  <select id="kernelSizeSelect" disabled>
+                    <option value="3">3×3</option>
+                    <option value="5">5×5</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="kernelTextArea">Input cepat (paste matriks)</label>
+                  <textarea id="kernelTextArea" rows="6" disabled style="width:100%; padding:11px 12px; border-radius:14px; border:1px solid rgba(255,255,255,0.14); background:rgba(0,0,0,0.18); color:rgba(255,255,255,0.88); outline:none; resize:vertical; font-family:var(--mono); font-size:12px; line-height:1.5;" placeholder="Contoh 3x3:
+121
+242
+121
+
+Contoh 5x5:
+11111
+12221
+12321
+12221
+11111
+
+Atau pakai spasi/koma:
+1 2 1
+2 4 2
+1 2 1"></textarea>
+                  <div class="filter-btns" style="margin-top:10px;">
+                    <button class="ghost" id="btnFillFromText" disabled>Isi Grid dari Teks</button>
+                    <button class="ghost" id="btnClearText" disabled>Clear</button>
+                  </div>
+                  <div class="note" style="margin-top: 8px;">
+                    Format: tiap baris = 1 row. Bisa "121" (digit rapat) atau pakai spasi/koma untuk angka multi-digit/negatif.
+                  </div>
+                </div>
+
+                <div class="kgrid">
+                  <div class="muted-line">
+                    <span class="pill">Editable Kernel Grid</span>
+                    <span class="note">Isi nilai (boleh negatif / desimal)</span>
+                  </div>
+                  <div class="kgrid-inner size-3" id="kernelEditor" aria-label="Kernel Editor"></div>
+                </div>
+
+                <div class="two-col">
+                  <div>
+                    <label for="divisorInput">Divisor / Normalization</label>
+                    <input id="divisorInput" type="number" step="0.01" value="1" disabled />
+                    <div class="note" style="margin-top: 6px;">Gunakan 1 jika tidak ingin normalisasi.</div>
+                  </div>
+                  <div>
+                    <label for="offsetInput">Offset (opsional)</label>
+                    <input id="offsetInput" type="number" step="1" value="0" disabled />
+                    <div class="note" style="margin-top: 6px;">Contoh emboss sering memakai offset 128.</div>
+                  </div>
+                </div>
+
+                <div class="filter-btns">
+                  <button class="primary" id="btnApplyCustom" disabled>Apply Custom Kernel</button>
+                  <button class="ghost" id="btnFillIdentity" disabled>Identity</button>
+                </div>
+
+                <div class="note">
+                  Boundary handling: <strong>edge replication</strong> (pixel di luar batas mengambil pixel terdekat).
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="tabAbout">
+              <div class="stack">
+                <div class="note">
+                  <strong>Inti algoritma:</strong> convolution (mask processing) menghitung tiap pixel output dengan menjumlahkan
+                  hasil perkalian nilai tetangga dengan koefisien kernel.
+                </div>
+
+                <div>
+                  <label>Kernel aktif</label>
+                  <pre class="kernel" id="kernelView">Silakan upload gambar, lalu pilih filter.</pre>
+                </div>
+
+                <div>
+                  <label>Penjelasan filter</label>
+                  <div class="note" id="filterExplanation">-</div>
+                </div>
+
+                <div>
+                  <label>Langkah convolution (contoh 1 pixel)</label>
+                  <pre class="kernel" id="sampleSteps">Upload gambar dan pilih filter untuk melihat contoh perhitungan.</pre>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Area Canvas">
+        <div class="card-header">
+          <h2 class="card-title">Preview</h2>
+          <span class="note"><span class="pill" id="metaText">-</span></span>
+        </div>
+
+        <div class="canvas-grid">
+          <div class="preview-grid" id="sideBySideRoot">
+            <div class="canvas-card">
+              <div class="canvas-head">
+                <div class="canvas-title">Before (Original)</div>
+                <div class="canvas-meta" id="metaOriginal">-</div>
+              </div>
+              <div class="canvas-wrap">
+                <canvas id="canvasOriginal" width="640" height="360" aria-label="Canvas Asli"></canvas>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-head">
+                <div class="canvas-title">After (Filtered)</div>
+                <div class="canvas-meta" id="metaFiltered">-</div>
+              </div>
+              <div class="canvas-wrap">
+                <canvas id="canvasFiltered" width="640" height="360" aria-label="Canvas Hasil"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="canvas-card hidden" id="compareCard">
+            <div class="canvas-head">
+              <div class="canvas-title">Compare Slider (Optional)</div>
+              <div class="canvas-meta">Geser untuk bandingkan</div>
+            </div>
+            <div class="canvas-wrap">
+              <div class="compare" id="compareRoot" style="--compare: 50%;">
+                <div class="label before">Before</div>
+                <div class="label after">After</div>
+                <canvas id="canvasCompareOriginal" width="640" height="360" aria-label="Compare Canvas Asli"></canvas>
+                <div class="layer filtered" id="filteredLayer">
+                  <canvas id="canvasCompareFiltered" width="640" height="360" aria-label="Compare Canvas Hasil"></canvas>
+                </div>
+              </div>
+            </div>
+            <div style="padding: 0 14px 14px;">
+              <label for="compareRange" style="margin: 0 0 8px;">Compare slider</label>
+              <input id="compareRange" type="range" min="0" max="100" value="50" disabled />
+              <div class="note" style="margin-top: 6px;">Mode ini tidak mengubah hasil, hanya cara melihat.</div>
+            </div>
+          </div>
+
+          <div class="canvas-card">
+            <div class="canvas-head">
+              <div class="canvas-title">Info Cepat</div>
+              <div class="canvas-meta">Status & kernel</div>
+            </div>
+            <div class="card-body" style="padding: 12px 14px 14px;">
+              <div class="stack">
+                <div>
+                  <div class="muted-line"><span class="pill">Active Filter</span><span class="pill" id="activeFilterPill">-</span></div>
+                </div>
+                <div>
+                  <div class="muted-line"><span class="pill">Boundary</span><span class="pill">edge replication</span></div>
+                </div>
+                <div>
+                  <div class="muted-line"><span class="pill">Kernel Size</span><span class="pill" id="activeKernelSize">-</span></div>
+                </div>
+                <div class="note" id="quickHint">Upload gambar untuk mulai.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="canvas-card" id="histCard">
+            <div class="canvas-head">
+              <div class="canvas-title">Histogram Grayscale (Opsional)</div>
+              <div class="canvas-meta">Before vs After</div>
+            </div>
+            <div class="card-body" style="padding: 12px 14px 14px;">
+              <div class="preview-grid">
+                <div>
+                  <div class="note" style="margin-bottom: 8px;">Before (Original)</div>
+                  <canvas id="histOriginal" width="512" height="160" aria-label="Histogram Original"></canvas>
+                </div>
+                <div>
+                  <div class="note" style="margin-bottom: 8px;">After (Filtered)</div>
+                  <canvas id="histFiltered" width="512" height="160" aria-label="Histogram Filtered"></canvas>
+                </div>
+              </div>
+              <div class="note" style="margin-top: 10px;">
+                Histogram dihitung dari nilai grayscale (0..255). Setelah apply filter, histogram akan ikut ter-update.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Dibuat untuk tugas <b>Pengolahan Citra Digital</b>. Single-file <code>index.html</code> (tanpa framework/backend/library eksternal),
+    siap untuk GitHub Pages.
+  </footer>
+
+  <script>
+    "use strict";
+
+    // ============================
+    // Utilitas Dasar
+    // ============================
+
+    function clamp255(v) {
+      return Math.max(0, Math.min(255, v));
+    }
+
+    function idx(x, y, width) {
+      return (y * width + x) * 4;
+    }
+
+    function toGray(r, g, b) {
+      return 0.299 * r + 0.587 * g + 0.114 * b;
+    }
+
+    function setStatus(text) {
+      statusText.textContent = text;
+    }
+
+    function setMeta(el, w, h) {
+      el.textContent = (w && h) ? `${w}×${h}` : "-";
+    }
+
+    function setCompare(valuePercent) {
+      compareRoot.style.setProperty("--compare", `${valuePercent}%`);
+    }
+
+    function safePutImageData(ctx, imageData) {
+      if (!ctx || !imageData) return;
+      try {
+        ctx.putImageData(imageData, 0, 0);
+      } catch (_) {
+        // Abaikan jika canvas/context belum siap (mis. compare card tersembunyi pada browser tertentu)
+      }
+    }
+
+    function prettyKernel(kernel2D, divisor, offset) {
+      const size = kernel2D.length;
+      const lines = [];
+      if (divisor !== 1) lines.push(`1/${divisor} *`);
+      if (offset) lines.push(`offset: ${offset}`);
+      lines.push("[");
+      for (let y = 0; y < size; y++) {
+        const row = kernel2D[y].map(v => (Number.isFinite(v) ? v : 0)).join(" ");
+        lines.push(` ${row}`);
+      }
+      lines.push("]");
+      return lines.join("\n");
+    }
+
+    // ============================
+    // Elemen DOM
+    // ============================
+
+    const fileInput = document.getElementById("fileInput");
+    const statusText = document.getElementById("statusText");
+
+    const btnModeCompare = document.getElementById("btnModeCompare");
+    const btnModeSide = document.getElementById("btnModeSide");
+
+    const tabPresetBtn = document.getElementById("tabPresetBtn");
+    const tabCustomBtn = document.getElementById("tabCustomBtn");
+    const tabAboutBtn = document.getElementById("tabAboutBtn");
+
+    const tabPreset = document.getElementById("tabPreset");
+    const tabCustom = document.getElementById("tabCustom");
+    const tabAbout = document.getElementById("tabAbout");
+
+    const filterSelect = document.getElementById("filterSelect");
+    const intensityRange = document.getElementById("intensityRange");
+    const intensityValue = document.getElementById("intensityValue");
+    const highBoostBlock = document.getElementById("highBoostBlock");
+    const highBoostRange = document.getElementById("highBoostRange");
+    const highBoostValue = document.getElementById("highBoostValue");
+    const btnApply = document.getElementById("btnApply");
+    const btnUndo = document.getElementById("btnUndo");
+    const btnReset = document.getElementById("btnReset");
+    const btnDownload = document.getElementById("btnDownload");
+
+    const recommendationText = document.getElementById("recommendationText");
+
+    const kernelView = document.getElementById("kernelView");
+    const filterExplanation = document.getElementById("filterExplanation");
+    const sampleSteps = document.getElementById("sampleSteps");
+
+    const kernelSizeSelect = document.getElementById("kernelSizeSelect");
+    const kernelEditor = document.getElementById("kernelEditor");
+    const kernelTextArea = document.getElementById("kernelTextArea");
+    const btnFillFromText = document.getElementById("btnFillFromText");
+    const btnClearText = document.getElementById("btnClearText");
+    const divisorInput = document.getElementById("divisorInput");
+    const offsetInput = document.getElementById("offsetInput");
+    const btnApplyCustom = document.getElementById("btnApplyCustom");
+    const btnFillIdentity = document.getElementById("btnFillIdentity");
+
+    const compareRoot = document.getElementById("compareRoot");
+    const compareRange = document.getElementById("compareRange");
+    const compareCard = document.getElementById("compareCard");
+    const sideBySideRoot = document.getElementById("sideBySideRoot");
+
+    const metaText = document.getElementById("metaText");
+    const metaOriginal = document.getElementById("metaOriginal");
+    const metaFiltered = document.getElementById("metaFiltered");
+    const activeFilterPill = document.getElementById("activeFilterPill");
+    const activeKernelSize = document.getElementById("activeKernelSize");
+    const quickHint = document.getElementById("quickHint");
+
+    const histOriginal = document.getElementById("histOriginal");
+    const histFiltered = document.getElementById("histFiltered");
+    const ctxHistOriginal = histOriginal.getContext("2d");
+    const ctxHistFiltered = histFiltered.getContext("2d");
+
+    const canvasOriginal = document.getElementById("canvasOriginal");
+    const canvasFiltered = document.getElementById("canvasFiltered");
+    const ctxOriginal = canvasOriginal.getContext("2d", { willReadFrequently: true });
+    const ctxFiltered = canvasFiltered.getContext("2d", { willReadFrequently: true });
+
+    const canvasCompareOriginal = document.getElementById("canvasCompareOriginal");
+    const canvasCompareFiltered = document.getElementById("canvasCompareFiltered");
+    const ctxCompareOriginal = canvasCompareOriginal.getContext("2d", { willReadFrequently: true });
+    const ctxCompareFiltered = canvasCompareFiltered.getContext("2d", { willReadFrequently: true });
+
+    // ============================
+    // Preset Filters
+    // ============================
+
+    const PRESETS = [
+      {
+        id: "box3",
+        group: "Smoothing",
+        name: "Box Blur 3x3",
+        kind: "convolution",
+        kernel: [
+          [1, 1, 1],
+          [1, 1, 1],
+          [1, 1, 1],
+        ],
+        divisor: 9,
+        offset: 0,
+        description: "Smoothing sederhana: rata-rata tetangga 3x3 (mengurangi noise halus, membuat blur).",
+      },
+      {
+        id: "box5",
+        group: "Smoothing",
+        name: "Box Blur 5x5",
+        kind: "convolution",
+        kernel: Array.from({ length: 5 }, () => [1, 1, 1, 1, 1]),
+        divisor: 25,
+        offset: 0,
+        description: "Box blur 5x5: blur lebih kuat (lebih smoothing).",
+      },
+      {
+        id: "gauss",
+        group: "Smoothing",
+        name: "Gaussian / Weighted Average 3x3",
+        kind: "convolution",
+        kernel: [
+          [1, 2, 1],
+          [2, 4, 2],
+          [1, 2, 1],
+        ],
+        divisor: 16,
+        offset: 0,
+        description: "Weighted average (mirip Gaussian kecil): smoothing dengan bobot lebih besar di pusat.",
+      },
+      {
+        id: "median3",
+        group: "Smoothing",
+        name: "Median Filter 3x3",
+        kind: "median",
+        size: 3,
+        description: "Median filter: efektif menghilangkan noise impuls (salt-and-pepper) sambil menjaga tepi.",
+      },
+      {
+        id: "laplacian4",
+        group: "Sharpening",
+        name: "Laplacian (4-neighbor)",
+        kind: "convolution",
+        kernel: [
+          [0, 1, 0],
+          [1, -4, 1],
+          [0, 1, 0],
+        ],
+        divisor: 1,
+        offset: 0,
+        description: "Laplacian menonjolkan perubahan intensitas (edge/ detail). Output diklem 0..255.",
+      },
+      {
+        id: "sharpen",
+        group: "Sharpening",
+        name: "Sharpen",
+        kind: "convolution",
+        kernel: [
+          [0, -1, 0],
+          [-1, 5, -1],
+          [0, -1, 0],
+        ],
+        divisor: 1,
+        offset: 0,
+        description: "Sharpen: mempertajam dengan meningkatkan komponen high-frequency (detail).",
+      },
+      {
+        id: "highboost",
+        group: "Sharpening",
+        name: "High-Boost Filter (A)",
+        kind: "highboost",
+        description: "High-boost: output = original + (A-1) * (original - blurred). A dikontrol slider.",
+      },
+      {
+        id: "sobel",
+        group: "Edge Detection",
+        name: "Sobel",
+        kind: "sobel",
+        description: "Sobel: menghitung gradien horizontal (Gx) dan vertikal (Gy), lalu magnitude sebagai edge map.",
+      },
+      {
+        id: "prewitt",
+        group: "Edge Detection",
+        name: "Prewitt",
+        kind: "prewitt",
+        description: "Prewitt: mirip Sobel dengan bobot yang lebih sederhana.",
+      },
+      {
+        id: "edge8",
+        group: "Edge Detection",
+        name: "Edge Detect Sederhana (Laplacian 8-neighbor)",
+        kind: "convolution",
+        kernel: [
+          [-1, -1, -1],
+          [-1, 8, -1],
+          [-1, -1, -1],
+        ],
+        divisor: 1,
+        offset: 0,
+        description: "Edge detect sederhana menggunakan Laplacian 8-neighbor.",
+      },
+      {
+        id: "emboss",
+        group: "Artistic",
+        name: "Emboss",
+        kind: "convolution",
+        kernel: [
+          [-2, -1, 0],
+          [-1, 1, 1],
+          [0, 1, 2],
+        ],
+        divisor: 1,
+        offset: 128,
+        description: "Emboss: memberi efek relief. Biasanya memakai offset 128 agar hasil berada di sekitar abu-abu.",
+      },
+      {
+        id: "motion",
+        group: "Artistic",
+        name: "Motion Blur (5x5 horizontal)",
+        kind: "convolution",
+        kernel: [
+          [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0],
+          [1, 1, 1, 1, 1],
+          [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0],
+        ],
+        divisor: 5,
+        offset: 0,
+        description: "Motion blur horizontal 5x5 (garis tengah bernilai 1).",
+      },
+    ];
+
+    // ============================
+    // State
+    // ============================
+
+    let originalImageData = null;
+    let filteredImageData = null;
+    let isProcessing = false;
+    let viewMode = "compare";
+
+    // ============================
+    // Histogram Grayscale (Opsional)
+    // ============================
+
+    function computeGrayHistogram(imageData) {
+      const hist = new Uint32Array(256);
+      if (!imageData) return hist;
+      const d = imageData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const g = clamp255(Math.round(toGray(d[i], d[i + 1], d[i + 2])));
+        hist[g]++;
+      }
+      return hist;
+    }
+
+    function drawGrayHistogram(ctx, hist) {
+      if (!ctx) return;
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // background
+      ctx.fillStyle = "rgba(0,0,0,0.16)";
+      ctx.fillRect(0, 0, w, h);
+
+      // grid
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let y = 0; y <= 4; y++) {
+        const yy = Math.round((y / 4) * h) + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, yy);
+        ctx.lineTo(w, yy);
+        ctx.stroke();
+      }
+
+      let maxV = 0;
+      for (let i = 0; i < 256; i++) if (hist[i] > maxV) maxV = hist[i];
+      if (maxV <= 0) return;
+
+      const barW = w / 256;
+      ctx.fillStyle = "rgba(124, 92, 255, 0.75)";
+      for (let i = 0; i < 256; i++) {
+        const v = hist[i] / maxV;
+        const bh = Math.max(0, Math.round(v * (h - 6)));
+        const x = i * barW;
+        ctx.fillRect(x, h - bh, Math.max(1, barW), bh);
+      }
+    }
+
+    function updateHistograms() {
+      drawGrayHistogram(ctxHistOriginal, computeGrayHistogram(originalImageData));
+      drawGrayHistogram(ctxHistFiltered, computeGrayHistogram(filteredImageData));
+    }
+
+    // ============================
+    // Boundary Handling (edge replication)
+    // ============================
+
+    function clampCoord(v, max) {
+      if (v < 0) return 0;
+      if (v > max) return max;
+      return v;
+    }
+
+    // ============================
+    // Core: Convolution NxN Manual
+    // ============================
+
+    function applyConvolution(imageData, kernel, divisor, offset) {
+      const w = imageData.width;
+      const h = imageData.height;
+      const src = imageData.data;
+      const out = new ImageData(w, h);
+      const dst = out.data;
+
+      const n = kernel.length;
+      const half = Math.floor(n / 2);
+
+      const flat = new Float32Array(n * n);
+      for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+          flat[y * n + x] = Number(kernel[y][x]) || 0;
+        }
+      }
+
+      const div = (divisor === 0 || !Number.isFinite(divisor)) ? 1 : Number(divisor);
+      const off = Number(offset) || 0;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let r = 0, g = 0, b = 0;
+          for (let ky = 0; ky < n; ky++) {
+            const sy = clampCoord(y + ky - half, h - 1);
+            for (let kx = 0; kx < n; kx++) {
+              const sx = clampCoord(x + kx - half, w - 1);
+              const si = idx(sx, sy, w);
+              const kVal = flat[ky * n + kx];
+              r += src[si] * kVal;
+              g += src[si + 1] * kVal;
+              b += src[si + 2] * kVal;
+            }
+          }
+
+          r = r / div + off;
+          g = g / div + off;
+          b = b / div + off;
+
+          const di = idx(x, y, w);
+          dst[di] = clamp255(Math.round(r));
+          dst[di + 1] = clamp255(Math.round(g));
+          dst[di + 2] = clamp255(Math.round(b));
+          dst[di + 3] = src[di + 3];
+        }
+      }
+
+      return out;
+    }
+
+    function applyMedian(imageData, size) {
+      const w = imageData.width;
+      const h = imageData.height;
+      const src = imageData.data;
+      const out = new ImageData(w, h);
+      const dst = out.data;
+
+      const n = size;
+      const half = Math.floor(n / 2);
+      const total = n * n;
+      const grayBuf = new Float32Array(total);
+      const rgbBuf = new Uint16Array(total * 3);
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let p = 0;
+          for (let ky = 0; ky < n; ky++) {
+            const sy = clampCoord(y + ky - half, h - 1);
+            for (let kx = 0; kx < n; kx++) {
+              const sx = clampCoord(x + kx - half, w - 1);
+              const si = idx(sx, sy, w);
+              const r = src[si], g = src[si + 1], b = src[si + 2];
+              grayBuf[p] = toGray(r, g, b);
+              rgbBuf[p * 3] = r;
+              rgbBuf[p * 3 + 1] = g;
+              rgbBuf[p * 3 + 2] = b;
+              p++;
+            }
+          }
+
+          const order = Array.from({ length: total }, (_, i) => i);
+          order.sort((a, b) => grayBuf[a] - grayBuf[b]);
+          const mid = order[Math.floor(total / 2)];
+
+          const di = idx(x, y, w);
+          dst[di] = rgbBuf[mid * 3];
+          dst[di + 1] = rgbBuf[mid * 3 + 1];
+          dst[di + 2] = rgbBuf[mid * 3 + 2];
+          dst[di + 3] = src[di + 3];
+        }
+      }
+
+      return out;
+    }
+
+    function applyGradientEdge(imageData, gxKernel, gyKernel) {
+      const w = imageData.width;
+      const h = imageData.height;
+      const src = imageData.data;
+      const out = new ImageData(w, h);
+      const dst = out.data;
+
+      const gx = new Int16Array(9);
+      const gy = new Int16Array(9);
+      for (let y = 0; y < 3; y++) {
+        for (let x = 0; x < 3; x++) {
+          gx[y * 3 + x] = gxKernel[y][x];
+          gy[y * 3 + x] = gyKernel[y][x];
+        }
+      }
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let sumX = 0;
+          let sumY = 0;
+          let p = 0;
+          for (let ky = 0; ky < 3; ky++) {
+            const sy = clampCoord(y + ky - 1, h - 1);
+            for (let kx = 0; kx < 3; kx++) {
+              const sx = clampCoord(x + kx - 1, w - 1);
+              const si = idx(sx, sy, w);
+              const gray = toGray(src[si], src[si + 1], src[si + 2]);
+              sumX += gray * gx[p];
+              sumY += gray * gy[p];
+              p++;
+            }
+          }
+
+          const mag = Math.abs(sumX) + Math.abs(sumY);
+          const v = clamp255(Math.round(mag));
+          const di = idx(x, y, w);
+          dst[di] = v;
+          dst[di + 1] = v;
+          dst[di + 2] = v;
+          dst[di + 3] = src[di + 3];
+        }
+      }
+
+      return out;
+    }
+
+    function applyHighBoost(imageData, A) {
+      const gauss = PRESETS.find(p => p.id === "gauss");
+      const blurred = applyConvolution(imageData, gauss.kernel, gauss.divisor, 0);
+
+      const w = imageData.width;
+      const h = imageData.height;
+      const src = imageData.data;
+      const blr = blurred.data;
+      const out = new ImageData(w, h);
+      const dst = out.data;
+
+      const k = Math.max(1, Number(A) || 1);
+      const amp = k - 1;
+
+      for (let i = 0; i < src.length; i += 4) {
+        const r = src[i] + amp * (src[i] - blr[i]);
+        const g = src[i + 1] + amp * (src[i + 1] - blr[i + 1]);
+        const b = src[i + 2] + amp * (src[i + 2] - blr[i + 2]);
+        dst[i] = clamp255(Math.round(r));
+        dst[i + 1] = clamp255(Math.round(g));
+        dst[i + 2] = clamp255(Math.round(b));
+        dst[i + 3] = src[i + 3];
+      }
+
+      return out;
+    }
+
+    function blendWithOriginal(original, filtered, intensity01) {
+      if (!original || !filtered) return filtered;
+      const t = Math.max(0, Math.min(1, intensity01));
+      if (t === 1) return filtered;
+      if (t === 0) return original;
+
+      const w = original.width;
+      const h = original.height;
+      const out = new ImageData(w, h);
+      const dst = out.data;
+      const a = original.data;
+      const b = filtered.data;
+
+      for (let i = 0; i < a.length; i += 4) {
+        dst[i] = clamp255(Math.round(a[i] * (1 - t) + b[i] * t));
+        dst[i + 1] = clamp255(Math.round(a[i + 1] * (1 - t) + b[i + 1] * t));
+        dst[i + 2] = clamp255(Math.round(a[i + 2] * (1 - t) + b[i + 2] * t));
+        dst[i + 3] = a[i + 3];
+      }
+
+      return out;
+    }
+
+    // ============================
+    // UI: Tabs
+    // ============================
+
+    function setActiveTab(name) {
+      const map = {
+        preset: { btn: tabPresetBtn, panel: tabPreset },
+        custom: { btn: tabCustomBtn, panel: tabCustom },
+        about: { btn: tabAboutBtn, panel: tabAbout },
+      };
+
+      for (const key of Object.keys(map)) {
+        map[key].btn.classList.toggle("active", key === name);
+        map[key].panel.classList.toggle("active", key === name);
+      }
+    }
+
+    tabPresetBtn.addEventListener("click", () => setActiveTab("preset"));
+    tabCustomBtn.addEventListener("click", () => setActiveTab("custom"));
+    tabAboutBtn.addEventListener("click", () => setActiveTab("about"));
+
+    // ============================
+    // UI: Mode
+    // ============================
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      btnModeCompare.classList.toggle("active", mode === "compare");
+      btnModeSide.classList.toggle("active", mode === "side");
+
+      if (mode === "compare") {
+        compareCard.classList.remove("hidden");
+        compareRange.disabled = !originalImageData;
+        setCompare(compareRange.value);
+      } else {
+        compareCard.classList.add("hidden");
+        compareRange.disabled = true;
+      }
+    }
+
+    btnModeCompare.addEventListener("click", () => setViewMode("compare"));
+    btnModeSide.addEventListener("click", () => setViewMode("side"));
+
+    compareRange.addEventListener("input", () => {
+      if (viewMode !== "compare") return;
+      setCompare(compareRange.value);
+    });
+
+    // ============================
+    // UI: Preset dropdown
+    // ============================
+
+    function populatePresetSelect() {
+      filterSelect.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "-- Pilih filter --";
+      filterSelect.appendChild(placeholder);
+
+      const groups = new Map();
+      for (const p of PRESETS) {
+        if (!groups.has(p.group)) groups.set(p.group, []);
+        groups.get(p.group).push(p);
+      }
+
+      for (const [group, items] of groups) {
+        const og = document.createElement("optgroup");
+        og.label = group;
+        for (const item of items) {
+          const opt = document.createElement("option");
+          opt.value = item.id;
+          opt.textContent = item.name;
+          og.appendChild(opt);
+        }
+        filterSelect.appendChild(og);
+      }
+    }
+
+    function updatePresetUI(preset) {
+      if (!preset) {
+        activeFilterPill.textContent = "-";
+        filterExplanation.textContent = "-";
+        kernelView.textContent = "Silakan upload gambar, lalu pilih filter.";
+        activeKernelSize.textContent = "-";
+        highBoostBlock.style.display = "none";
+        return;
+      }
+
+      activeFilterPill.textContent = preset.name;
+      filterExplanation.textContent = preset.description;
+      highBoostBlock.style.display = (preset.kind === "highboost") ? "block" : "none";
+
+      if (preset.kind === "convolution") {
+        kernelView.textContent = prettyKernel(preset.kernel, preset.divisor, preset.offset);
+        activeKernelSize.textContent = `${preset.kernel.length}×${preset.kernel.length}`;
+      } else if (preset.kind === "median") {
+        kernelView.textContent = `Median Filter (${preset.size}×${preset.size}):\nTidak memakai kernel bobot.\nKonsep: ambil nilai tengah setelah sorting.`;
+        activeKernelSize.textContent = `${preset.size}×${preset.size}`;
+      } else if (preset.kind === "sobel") {
+        kernelView.textContent = "Sobel:\nGx = [-1 0 1; -2 0 2; -1 0 1]\nGy = [1 2 1; 0 0 0; -1 -2 -1]";
+        activeKernelSize.textContent = "3×3";
+      } else if (preset.kind === "prewitt") {
+        kernelView.textContent = "Prewitt:\nGx = [-1 0 1; -1 0 1; -1 0 1]\nGy = [1 1 1; 0 0 0; -1 -1 -1]";
+        activeKernelSize.textContent = "3×3";
+      } else if (preset.kind === "highboost") {
+        kernelView.textContent = "High-Boost (berbasis unsharp masking):\nblur = Gaussian 3x3\nmask = original - blur\nout = original + (A-1)*mask";
+        activeKernelSize.textContent = "3×3 + operasi";
+      }
+
+      quickHint.textContent = "Klik Apply Filter untuk memproses. Kamu juga bisa ubah intensity untuk blending.";
+    }
+
+    filterSelect.addEventListener("change", () => {
+      const preset = PRESETS.find(p => p.id === filterSelect.value);
+      updatePresetUI(preset);
+    });
+
+    // ============================
+    // UI: Intensity
+    // ============================
+
+    intensityRange.addEventListener("input", () => {
+      intensityValue.textContent = `${intensityRange.value}%`;
+      if (originalImageData && filteredImageData) {
+        const t = Number(intensityRange.value) / 100;
+        const blended = blendWithOriginal(originalImageData, filteredImageData, t);
+        ctxFiltered.putImageData(blended, 0, 0);
+        safePutImageData(ctxCompareFiltered, blended);
+      }
+    });
+
+    highBoostRange.addEventListener("input", () => {
+      highBoostValue.textContent = `${highBoostRange.value}`;
+    });
+
+    // ============================
+    // Custom Kernel Editor
+    // ============================
+
+    function buildKernelEditor(size) {
+      const n = Number(size);
+      kernelEditor.innerHTML = "";
+      kernelEditor.classList.remove("size-3", "size-5");
+      kernelEditor.classList.add(n === 3 ? "size-3" : "size-5");
+
+      const total = n * n;
+      for (let i = 0; i < total; i++) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "kcell";
+        input.value = "0";
+        input.inputMode = "decimal";
+        kernelEditor.appendChild(input);
+      }
+    }
+
+    function readKernelFromEditor() {
+      const n = Number(kernelSizeSelect.value);
+      const inputs = kernelEditor.querySelectorAll("input");
+      const kernel = [];
+      let p = 0;
+      for (let y = 0; y < n; y++) {
+        const row = [];
+        for (let x = 0; x < n; x++) {
+          const v = Number(String(inputs[p].value).replace(",", "."));
+          row.push(Number.isFinite(v) ? v : 0);
+          p++;
+        }
+        kernel.push(row);
+      }
+      return kernel;
+    }
+
+    function fillIdentityKernel() {
+      const n = Number(kernelSizeSelect.value);
+      const inputs = kernelEditor.querySelectorAll("input");
+      const center = Math.floor((n * n) / 2);
+      inputs.forEach((el, i) => el.value = (i === center ? "1" : "0"));
+      divisorInput.value = "1";
+      offsetInput.value = "0";
+    }
+
+    function parseKernelTextTo2D(text, n) {
+      const rawLines = String(text || "")
+        .replace(/\r/g, "")
+        .split("\n")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (rawLines.length !== n) return null;
+
+      const rows = [];
+      for (let y = 0; y < n; y++) {
+        const line = rawLines[y];
+
+        const digitsOnly = /^[0-9]+$/.test(line);
+        if (digitsOnly && line.length === n) {
+          rows.push(Array.from(line).map(ch => Number(ch)));
+          continue;
+        }
+
+        const tokens = line.split(/[\s,;]+/).filter(Boolean);
+        if (tokens.length !== n) return null;
+        const row = tokens.map(t => {
+          const v = Number(String(t).replace(",", "."));
+          return Number.isFinite(v) ? v : 0;
+        });
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function fillKernelGridFrom2D(kernel2D) {
+      const n = kernel2D.length;
+      if (n !== Number(kernelSizeSelect.value)) return;
+      const inputs = kernelEditor.querySelectorAll("input");
+      let p = 0;
+      for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+          inputs[p].value = String(kernel2D[y][x]);
+          p++;
+        }
+      }
+    }
+
+    kernelSizeSelect.addEventListener("change", () => {
+      buildKernelEditor(kernelSizeSelect.value);
+      fillIdentityKernel();
+    });
+
+    btnFillIdentity.addEventListener("click", () => fillIdentityKernel());
+
+    btnFillFromText.addEventListener("click", () => {
+      const n = Number(kernelSizeSelect.value);
+      const k2d = parseKernelTextTo2D(kernelTextArea.value, n);
+      if (!k2d) {
+        alert(`Format kernel tidak valid. Pastikan ${n} baris, dan tiap baris berisi ${n} angka.`);
+        return;
+      }
+      fillKernelGridFrom2D(k2d);
+    });
+
+    btnClearText.addEventListener("click", () => {
+      kernelTextArea.value = "";
+    });
+
+    // ============================
+    // Upload & Draw
+    // ============================
+
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        alert("File yang dipilih bukan gambar.");
+        resetAll();
+        return;
+      }
+
+      try {
+        setStatus("Memuat gambar...");
+        const img = await loadImageFromFile(file);
+        drawImageToCanvas(img);
+
+        originalImageData = ctxOriginal.getImageData(0, 0, canvasOriginal.width, canvasOriginal.height);
+        filteredImageData = null;
+
+        setMeta(metaOriginal, canvasOriginal.width, canvasOriginal.height);
+        setMeta(metaFiltered, null, null);
+        metaText.textContent = `${canvasOriginal.width}×${canvasOriginal.height}`;
+
+        enableControlsAfterUpload();
+        populatePresetSelect();
+
+        filterSelect.value = "box3";
+        updatePresetUI(PRESETS.find(p => p.id === "box3"));
+        updateRecommendations(file.name);
+
+        syncCompareCanvases();
+        setCompare(compareRange.value);
+        updateHistograms();
+        setStatus("Siap.");
+      } catch (err) {
+        console.error(err);
+        alert("Gagal memuat gambar.");
+        resetAll();
+      }
+    });
+
+    function loadImageFromFile(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("Image load error"));
+        };
+        img.src = url;
+      });
+    }
+
+    function drawImageToCanvas(img) {
+      canvasOriginal.width = img.naturalWidth;
+      canvasOriginal.height = img.naturalHeight;
+      canvasFiltered.width = img.naturalWidth;
+      canvasFiltered.height = img.naturalHeight;
+
+      canvasCompareOriginal.width = img.naturalWidth;
+      canvasCompareOriginal.height = img.naturalHeight;
+      canvasCompareFiltered.width = img.naturalWidth;
+      canvasCompareFiltered.height = img.naturalHeight;
+
+      ctxOriginal.clearRect(0, 0, canvasOriginal.width, canvasOriginal.height);
+      ctxFiltered.clearRect(0, 0, canvasFiltered.width, canvasFiltered.height);
+      ctxOriginal.drawImage(img, 0, 0);
+
+      if (ctxCompareOriginal && ctxCompareFiltered) {
+        ctxCompareOriginal.clearRect(0, 0, canvasCompareOriginal.width, canvasCompareOriginal.height);
+        ctxCompareFiltered.clearRect(0, 0, canvasCompareFiltered.width, canvasCompareFiltered.height);
+        ctxCompareOriginal.drawImage(img, 0, 0);
+      }
+    }
+
+    function syncCompareCanvases() {
+      if (!originalImageData) return;
+      // Render original to compare original
+      safePutImageData(ctxCompareOriginal, originalImageData);
+      // Jika ada hasil, render hasil ke compare filtered
+      if (filteredImageData) {
+        const t = Number(intensityRange.value) / 100;
+        const blended = blendWithOriginal(originalImageData, filteredImageData, t);
+        safePutImageData(ctxCompareFiltered, blended);
+      } else {
+        if (ctxCompareFiltered) ctxCompareFiltered.clearRect(0, 0, canvasCompareFiltered.width, canvasCompareFiltered.height);
+      }
+    }
+
+    // ============================
+    // Apply preset / custom
+    // ============================
+
+    btnApply.addEventListener("click", async () => {
+      if (!originalImageData || isProcessing) return;
+      const preset = PRESETS.find(p => p.id === filterSelect.value);
+      if (!preset) return;
+      await applyPreset(preset);
+    });
+
+    btnUndo.addEventListener("click", () => {
+      if (!originalImageData) return;
+      filteredImageData = null;
+      ctxFiltered.clearRect(0, 0, canvasFiltered.width, canvasFiltered.height);
+      setMeta(metaFiltered, null, null);
+      btnDownload.disabled = true;
+      sampleSteps.textContent = "Undo ke original. Pilih filter lalu Apply untuk melihat langkah convolution.";
+      updateHistograms();
+      setStatus("Kembali ke original.");
+    });
+
+    btnApplyCustom.addEventListener("click", async () => {
+      if (!originalImageData || isProcessing) return;
+      await applyCustomKernel();
+    });
+
+    async function applyPreset(preset) {
+      setBusy(true, `Memproses: ${preset.name}...`);
+      await new Promise(requestAnimationFrame);
+
+      let result = null;
+      if (preset.kind === "convolution") {
+        result = applyConvolution(originalImageData, preset.kernel, preset.divisor, preset.offset);
+      } else if (preset.kind === "median") {
+        result = applyMedian(originalImageData, preset.size);
+      } else if (preset.kind === "sobel") {
+        const gx = [
+          [-1, 0, 1],
+          [-2, 0, 2],
+          [-1, 0, 1],
+        ];
+        const gy = [
+          [1, 2, 1],
+          [0, 0, 0],
+          [-1, -2, -1],
+        ];
+        result = applyGradientEdge(originalImageData, gx, gy);
+      } else if (preset.kind === "prewitt") {
+        const gx = [
+          [-1, 0, 1],
+          [-1, 0, 1],
+          [-1, 0, 1],
+        ];
+        const gy = [
+          [1, 1, 1],
+          [0, 0, 0],
+          [-1, -1, -1],
+        ];
+        result = applyGradientEdge(originalImageData, gx, gy);
+      } else if (preset.kind === "highboost") {
+        result = applyHighBoost(originalImageData, highBoostRange.value);
+      }
+
+      filteredImageData = result;
+
+      const t = Number(intensityRange.value) / 100;
+      const blended = blendWithOriginal(originalImageData, filteredImageData, t);
+      ctxFiltered.putImageData(blended, 0, 0);
+      setMeta(metaFiltered, canvasFiltered.width, canvasFiltered.height);
+      btnDownload.disabled = false;
+
+      // Update compare view (jika sedang dibuka)
+      syncCompareCanvases();
+
+      sampleSteps.textContent = buildSampleConvolutionSteps(preset);
+      updateHistograms();
+      setBusy(false);
+      setStatus("Selesai.");
+    }
+
+    async function applyCustomKernel() {
+      setBusy(true, "Memproses: Custom Kernel...");
+      await new Promise(requestAnimationFrame);
+
+      const kernel = readKernelFromEditor();
+      const divisor = Number(divisorInput.value) || 1;
+      const offset = Number(offsetInput.value) || 0;
+
+      const result = applyConvolution(originalImageData, kernel, divisor, offset);
+      filteredImageData = result;
+
+      activeFilterPill.textContent = "Custom Kernel";
+      activeKernelSize.textContent = `${kernel.length}×${kernel.length}`;
+      kernelView.textContent = prettyKernel(kernel, divisor, offset);
+      filterExplanation.textContent = "Custom kernel: user memasukkan koefisien sendiri. Hasil tergantung kernel + divisor + offset.";
+
+      const t = Number(intensityRange.value) / 100;
+      const blended = blendWithOriginal(originalImageData, filteredImageData, t);
+      ctxFiltered.putImageData(blended, 0, 0);
+      setMeta(metaFiltered, canvasFiltered.width, canvasFiltered.height);
+      btnDownload.disabled = false;
+
+      syncCompareCanvases();
+
+      sampleSteps.textContent = buildSampleConvolutionSteps({
+        id: "custom",
+        name: "Custom Kernel",
+        kind: "convolution",
+        kernel,
+        divisor,
+        offset,
+      });
+
+      updateHistograms();
+      setBusy(false);
+      setStatus("Selesai.");
+    }
+
+    function buildSampleConvolutionSteps(preset) {
+      if (!originalImageData) return "Upload gambar dulu.";
+
+      const w = originalImageData.width;
+      const h = originalImageData.height;
+      const x = Math.floor(w / 2);
+      const y = Math.floor(h / 2);
+
+      if (preset.kind === "median") {
+        return `Median sample (pixel tengah @ ${x},${y}):\n- Ambil ${preset.size * preset.size} tetangga\n- Hitung grayscale dan sorting\n- Ambil nilai tengah (median) lalu ambil RGB dari pixel tersebut.`;
+      }
+
+      if (preset.kind === "sobel" || preset.kind === "prewitt") {
+        return `${preset.name} sample (pixel tengah @ ${x},${y}):\n- Konversi neighbor ke grayscale\n- Hitung sum(Gx*neighbor) dan sum(Gy*neighbor)\n- Magnitude ≈ |Gx| + |Gy|\n- Output jadi grayscale edge map.`;
+      }
+
+      if (preset.kind === "highboost") {
+        return `High-Boost sample (pixel tengah @ ${x},${y}):\n- blur = Gaussian 3x3\n- mask = original - blur\n- out = original + (A-1)*mask (A=${highBoostRange.value})`;
+      }
+
+      if (preset.kind !== "convolution") {
+        return "Pilih filter convolution/median/edge untuk melihat langkah.";
+      }
+
+      const k = preset.kernel;
+      const n = k.length;
+      const half = Math.floor(n / 2);
+      const div = preset.divisor || 1;
+      const off = preset.offset || 0;
+      let sumR = 0;
+
+      const lines = [];
+      lines.push(`${preset.name} sample (R-channel) @ pixel (${x},${y})`);
+      lines.push(`kernel ${n}×${n}, divisor=${div}, offset=${off}`);
+      lines.push("");
+
+      for (let ky = 0; ky < n; ky++) {
+        const sy = clampCoord(y + ky - half, h - 1);
+        for (let kx = 0; kx < n; kx++) {
+          const sx = clampCoord(x + kx - half, w - 1);
+          const si = idx(sx, sy, w);
+          const pr = originalImageData.data[si];
+          const kv = Number(k[ky][kx]) || 0;
+          const mul = pr * kv;
+          sumR += mul;
+          lines.push(`neighbor(${sx},${sy}).R=${pr} * k=${kv} => ${mul.toFixed(2)}`);
+        }
+      }
+
+      const outR = clamp255(Math.round(sumR / div + off));
+      lines.push("");
+      lines.push(`sum = ${sumR.toFixed(2)}`);
+      lines.push(`outR = clamp(round(sum/div + offset)) = clamp(round(${sumR.toFixed(2)}/${div} + ${off})) = ${outR}`);
+      return lines.join("\n");
+    }
+
+    // ============================
+    // Recommendations (rule sederhana)
+    // ============================
+
+    function updateRecommendations(fileName) {
+      if (!originalImageData) {
+        recommendationText.textContent = "Upload gambar untuk melihat rekomendasi.";
+        return;
+      }
+
+      const lower = String(fileName || "").toLowerCase();
+      const portraitHint = lower.includes("portrait") || lower.includes("selfie") || lower.includes("face");
+      const sharpness = estimateSharpness(originalImageData);
+
+      const tips = [];
+      if (portraitHint) tips.push("Terdeteksi kemungkinan portrait/selfie → coba smoothing: Gaussian / Median.");
+      if (sharpness < 18) tips.push("Gambar terlihat agak blur (sharpness rendah) → coba Sharpen / High-Boost.");
+      else if (sharpness > 45) tips.push("Gambar punya banyak detail/edge → smoothing (Gaussian) bisa mengurangi noise/detail berlebih.");
+      else tips.push("Kondisi normal → coba Gaussian (smoothing) atau Sharpen sesuai kebutuhan.");
+
+      recommendationText.textContent = tips.join(" ");
+    }
+
+    function estimateSharpness(imageData) {
+      const w = imageData.width;
+      const h = imageData.height;
+      const src = imageData.data;
+      const step = Math.max(2, Math.floor(Math.min(w, h) / 120));
+      let sum = 0;
+      let count = 0;
+
+      for (let y = 1; y < h - 1; y += step) {
+        for (let x = 1; x < w - 1; x += step) {
+          const c = idx(x, y, w);
+          const l = idx(x - 1, y, w);
+          const r = idx(x + 1, y, w);
+          const u = idx(x, y - 1, w);
+          const d = idx(x, y + 1, w);
+          const gL = toGray(src[l], src[l + 1], src[l + 2]);
+          const gR = toGray(src[r], src[r + 1], src[r + 2]);
+          const gU = toGray(src[u], src[u + 1], src[u + 2]);
+          const gD = toGray(src[d], src[d + 1], src[d + 2]);
+          const mag = Math.abs(gR - gL) + Math.abs(gD - gU);
+          sum += mag;
+          count++;
+        }
+      }
+      return count ? (sum / count) : 0;
+    }
+
+    // ============================
+    // Download, Reset, Busy
+    // ============================
+
+    btnReset.addEventListener("click", () => resetAll());
+
+    btnDownload.addEventListener("click", () => {
+      if (!filteredImageData) return;
+      const a = document.createElement("a");
+      a.download = "filtered.png";
+      a.href = canvasFiltered.toDataURL("image/png");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+
+    function setBusy(busy, label) {
+      isProcessing = busy;
+      setStatus(busy ? (label || "Memproses...") : "Siap.");
+      btnApply.disabled = busy || !originalImageData;
+      btnApplyCustom.disabled = busy || !originalImageData;
+      btnUndo.disabled = busy || !originalImageData;
+      btnReset.disabled = busy || !originalImageData;
+      btnDownload.disabled = busy || !filteredImageData;
+      filterSelect.disabled = busy || !originalImageData;
+      intensityRange.disabled = busy || !originalImageData;
+      kernelSizeSelect.disabled = busy || !originalImageData;
+      divisorInput.disabled = busy || !originalImageData;
+      offsetInput.disabled = busy || !originalImageData;
+      btnFillIdentity.disabled = busy || !originalImageData;
+      compareRange.disabled = busy || !originalImageData || viewMode !== "compare";
+    }
+
+    function enableControlsAfterUpload() {
+      btnModeCompare.disabled = false;
+      btnModeSide.disabled = false;
+      filterSelect.disabled = false;
+      intensityRange.disabled = false;
+      btnApply.disabled = false;
+      btnUndo.disabled = false;
+      btnReset.disabled = false;
+      kernelSizeSelect.disabled = false;
+      kernelTextArea.disabled = false;
+      btnFillFromText.disabled = false;
+      btnClearText.disabled = false;
+      divisorInput.disabled = false;
+      offsetInput.disabled = false;
+      btnApplyCustom.disabled = false;
+      btnFillIdentity.disabled = false;
+
+      intensityRange.value = "100";
+      intensityValue.textContent = "100%";
+      highBoostValue.textContent = `${highBoostRange.value}`;
+
+      buildKernelEditor(kernelSizeSelect.value);
+      fillIdentityKernel();
+
+      setViewMode(viewMode);
+    }
+
+    function clearCanvases() {
+      canvasOriginal.width = 640;
+      canvasOriginal.height = 360;
+      canvasFiltered.width = 640;
+      canvasFiltered.height = 360;
+
+      canvasCompareOriginal.width = 640;
+      canvasCompareOriginal.height = 360;
+      canvasCompareFiltered.width = 640;
+      canvasCompareFiltered.height = 360;
+      ctxOriginal.clearRect(0, 0, canvasOriginal.width, canvasOriginal.height);
+      ctxFiltered.clearRect(0, 0, canvasFiltered.width, canvasFiltered.height);
+      if (ctxCompareOriginal) ctxCompareOriginal.clearRect(0, 0, canvasCompareOriginal.width, canvasCompareOriginal.height);
+      if (ctxCompareFiltered) ctxCompareFiltered.clearRect(0, 0, canvasCompareFiltered.width, canvasCompareFiltered.height);
+      setMeta(metaOriginal, null, null);
+      setMeta(metaFiltered, null, null);
+      metaText.textContent = "-";
+      setCompare(50);
+    }
+
+    function resetAll() {
+      fileInput.value = "";
+      originalImageData = null;
+      filteredImageData = null;
+      isProcessing = false;
+
+      kernelView.textContent = "Silakan upload gambar, lalu pilih filter.";
+      filterExplanation.textContent = "-";
+      sampleSteps.textContent = "Upload gambar dan pilih filter untuk melihat contoh perhitungan.";
+      recommendationText.textContent = "Upload gambar untuk melihat rekomendasi.";
+      activeFilterPill.textContent = "-";
+      activeKernelSize.textContent = "-";
+      quickHint.textContent = "Upload gambar untuk mulai.";
+
+      clearCanvases();
+      setStatus("Belum ada gambar.");
+
+      btnModeCompare.disabled = true;
+      btnModeSide.disabled = true;
+
+      compareRange.disabled = true;
+
+      filterSelect.disabled = true;
+      filterSelect.innerHTML = "<option value=\"\">-- Upload gambar dulu --</option>";
+      intensityRange.disabled = true;
+      btnApply.disabled = true;
+      btnUndo.disabled = true;
+      btnReset.disabled = true;
+      btnDownload.disabled = true;
+
+      kernelSizeSelect.disabled = true;
+      kernelTextArea.disabled = true;
+      btnFillFromText.disabled = true;
+      btnClearText.disabled = true;
+      divisorInput.disabled = true;
+      offsetInput.disabled = true;
+      btnApplyCustom.disabled = true;
+      btnFillIdentity.disabled = true;
+
+      highBoostBlock.style.display = "none";
+
+      compareCard.classList.add("hidden");
+
+      drawGrayHistogram(ctxHistOriginal, new Uint32Array(256));
+      drawGrayHistogram(ctxHistFiltered, new Uint32Array(256));
+
+      // Pastikan tab tidak "hilang" akibat state sebelumnya
+      setActiveTab("preset");
+    }
+
+    // ============================
+    // Init
+    // ============================
+
+    resetAll();
+  </script>
+</body>
+</html>
